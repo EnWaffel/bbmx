@@ -1,0 +1,12 @@
+[submodule "argparse"]
+	path = argparse
+	url = https://github.com/cofyc/argparse.git
+[submodule "openal-soft"]
+	path = openal-soft
+	url = https://github.com/kcat/openal-soft.git
+[submodule "stb"]
+	path = stb
+	url = https://github.com/nothings/stb.git
+[submodule "json-c"]
+	path = json-c
+	url = https://github.com/json-c/json-c.git

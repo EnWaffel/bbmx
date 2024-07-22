@@ -1,0 +1,16 @@
+{
+  "name": "LM108",
+  "channel_modes": [9, 16],
+  "channels": {
+    "red": 4,
+    "green": 5,
+    "blue": 6,
+    "white": 7,
+    "tilt": 2,
+    "pan": 1,
+    "motor_speed": 9,
+    "brightness": 3
+  },
+  "max_tilt": 270,
+  "max_pan": 540
+}
