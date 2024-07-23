@@ -25,7 +25,9 @@ static void print_lua_error(lua_State* L);
 static int do_pcall(lua_State* L, int nargs, int nresults);
 static void INThandler(int sig);
 static int load_audio(const char* path);
-static void terminateOpenAL();
+static void terminate_openal();
+static void update_flashes(float delta, BBMXScontext* ctx, float timePos);
+static int update_timed_functions(lua_State* L, BBMXScontext* ctx);
 
 static ALCdevice* alc_device = NULL;
 static ALCcontext* alc_context = NULL;
@@ -35,6 +37,7 @@ static ALint al_sample_rate;
 static BBMXStimedflash* curFlash = NULL;
 static BBMXSfixture* curFlashFx = NULL;
 static int curFlashTemp = 0;
+static float elapsed = 0.0f;
 
 static const char *const usages[] = {
     "bbmx [options] [[--] args]",
@@ -170,7 +173,7 @@ int run_script(const char* path)
         {
             bbmxs_close();
             lua_close(L);
-            terminateOpenAL();
+            terminate_openal();
         }
         
         alSourcei(al_source, AL_BUFFER, al_buffer);
@@ -200,7 +203,6 @@ int run_script(const char* path)
     {
         lua_pop(L, -1);
         time_t last = 0;
-        double elapsed = 0;
         while (!gShouldExit)
         {
             time_t now = (clock() / (double)CLOCKS_PER_SEC) * 1000;
@@ -253,7 +255,7 @@ int run_script(const char* path)
                                 lua_pushinteger(L, curBeat);
                                 if (!do_pcall(L, 1, 0))
                                 {
-                                    terminateOpenAL();
+                                    terminate_openal();
                                     bbmxs_close();
                                     lua_close(L);
                                     return -1;
@@ -263,92 +265,10 @@ int run_script(const char* path)
                     }
                 }
 
-                for (int i = 0; i < ctx->timedFlashCount; i++)
+                update_flashes(delta, ctx, timePos);
+                if (!update_timed_functions(L, ctx))
                 {
-                    BBMXStimedflash* flash = &ctx->timedFlashes[i];
-                    if (flash->used) continue;
-
-                    if (timePos >= flash->t)
-                    {
-                        flash->used = 1;
-                        BBMXSfixture* fx = bbmxs_get_fx(flash->name);
-                        curFlash = flash;
-                        curFlashFx = fx;
-                        fx->color = flash->color;
-                    }
-                }
-
-                if (curFlash != NULL)
-                {
-
-                    if (curFlashFx->color.r - curFlash->speed > 0)
-                    {
-                        curFlashFx->color.r -= curFlash->speed * delta;
-                    }
-                    if (curFlashFx->color.g - curFlash->speed > 0)
-                    {
-                        curFlashFx->color.g -= curFlash->speed * delta;
-                    }
-                    if (curFlashFx->color.b - curFlash->speed > 0)
-                    {
-                        curFlashFx->color.b -= curFlash->speed * delta;
-                    }
-                    if (curFlashFx->color.w - curFlash->speed > 0)
-                    {
-                        curFlashFx->color.w -= curFlash->speed * delta;
-                    }
-
-                    if (curFlashFx->color.r < 1 && curFlashFx->color.g < 1 && curFlashFx->color.b < 1 && curFlashFx->color.w < 1)
-                    {
-                        if (curFlashTemp)
-                        {
-                            curFlashTemp = 0;
-                            free(curFlash);
-                        }
-                        curFlash = NULL;
-                        curFlashFx = NULL;
-                    }
-                    else
-                    {
-                        bbmxs_fx_update_color(curFlashFx);
-                    }
-                }
-                
-                int noMoreFuncToExecute = 1;
-                for (int i = 0; i < ctx->timedFunctionCount; i++)
-                {
-                    BBMXStimedfunc* timedFunc = &ctx->timedFunctions[i];
-                    if (timedFunc->used) continue;
-                    noMoreFuncToExecute = 0;
-
-                    if (elapsed >= timedFunc->t)
-                    {
-                        timedFunc->used = 1;
-                        lua_getglobal(L, timedFunc->name);
-                        if (!do_pcall(L, 0, 0))
-                        {
-                            bbmxs_close();
-                            lua_close(L);
-                            return -1;
-                        }
-                    }
-                }
-
-                int justReset = 0;
-                if (gDoTimerReset)
-                {
-                    justReset = 1;
-                    gDoTimerReset = 0;
-                    elapsed = 0.0f;
-                    for (int i = 0; i < ctx->timedFunctionCount; i++)
-                    {
-                        ctx->timedFunctions[i].used = 0;
-                    }
-                }
-
-                if (noMoreFuncToExecute && !justReset && ctx->timedFunctionCount > 0)
-                {
-                    gShouldExit = 1;
+                    return -1;
                 }
             }
         }
@@ -360,14 +280,110 @@ int run_script(const char* path)
         do_pcall(L, 0, 0);
     }
 
-    terminateOpenAL();
+    terminate_openal();
     bbmxs_close();
     lua_close(L);
 
     return 0;
 }
 
-void print_lua_error(lua_State* L)
+static void update_flashes(float delta, BBMXScontext* ctx, float timePos)
+{
+    for (int i = 0; i < ctx->timedFlashCount; i++)
+    {
+        BBMXStimedflash* flash = &ctx->timedFlashes[i];
+        if (flash->used) continue;
+
+        if (timePos >= flash->t)
+        {
+            flash->used = 1;
+            BBMXSfixture* fx = bbmxs_get_fx(flash->name);
+            curFlash = flash;
+            curFlashFx = fx;
+            fx->color = flash->color;
+        }
+    }
+
+    if (curFlash != NULL)
+    {
+
+        if (curFlashFx->color.r - curFlash->speed > 0)
+        {
+            curFlashFx->color.r -= curFlash->speed * delta;
+        }
+        if (curFlashFx->color.g - curFlash->speed > 0)
+        {
+            curFlashFx->color.g -= curFlash->speed * delta;
+        }
+        if (curFlashFx->color.b - curFlash->speed > 0)
+        {
+            curFlashFx->color.b -= curFlash->speed * delta;
+        }
+        if (curFlashFx->color.w - curFlash->speed > 0)
+        {
+            curFlashFx->color.w -= curFlash->speed * delta;
+        }
+
+        if (curFlashFx->color.r < 1 && curFlashFx->color.g < 1 && curFlashFx->color.b < 1 && curFlashFx->color.w < 1)
+        {
+            if (curFlashTemp)
+            {
+                curFlashTemp = 0;
+                free(curFlash);
+            }
+            curFlash = NULL;
+            curFlashFx = NULL;
+        }
+        else
+        {
+            bbmxs_fx_update_color(curFlashFx);
+        }
+    }
+}
+
+static int update_timed_functions(lua_State* L, BBMXScontext* ctx)
+{
+    int noMoreFuncToExecute = 1;
+    for (int i = 0; i < ctx->timedFunctionCount; i++)
+    {
+        BBMXStimedfunc* timedFunc = &ctx->timedFunctions[i];
+        if (timedFunc->used) continue;
+        noMoreFuncToExecute = 0;
+
+        if (elapsed >= timedFunc->t)
+        {
+            timedFunc->used = 1;
+            lua_getglobal(L, timedFunc->name);
+            if (!do_pcall(L, 0, 0))
+            {
+                bbmxs_close();
+                lua_close(L);
+                return 0;
+            }
+        }
+    }
+
+    int justReset = 0;
+    if (gDoTimerReset)
+    {
+        justReset = 1;
+        gDoTimerReset = 0;
+        elapsed = 0.0f;
+        for (int i = 0; i < ctx->timedFunctionCount; i++)
+        {
+            ctx->timedFunctions[i].used = 0;
+        }
+    }
+
+    if (noMoreFuncToExecute && !justReset && ctx->timedFunctionCount > 0)
+    {
+        gShouldExit = 1;
+    }
+
+    return 1;
+}
+
+static void print_lua_error(lua_State* L)
 {
     printf("%s\n", lua_tostring(L, -1));
 }
@@ -443,7 +459,7 @@ static int load_audio(const char* path)
     return 1;
 }
 
-static void terminateOpenAL()
+static void terminate_openal()
 {
     if (alc_device == NULL) return;
 
