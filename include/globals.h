@@ -7,5 +7,6 @@ extern int gMaxFixtures;
 extern int gShouldExit;
 extern int gUPS; // Updates per second
 extern int gDoTimerReset;
+extern int gExitAfterNoMoreTimedFuncs;
 
 #endif // __BBMX_GLOBALS_H

@@ -268,6 +268,7 @@ int run_script(const char* path)
                 update_flashes(delta, ctx, timePos);
                 if (!update_timed_functions(L, ctx))
                 {
+                    printf("bbmx Error: Something went wrong while updating timed functions!\n");
                     return -1;
                 }
             }
@@ -375,7 +376,7 @@ static int update_timed_functions(lua_State* L, BBMXScontext* ctx)
         }
     }
 
-    if (noMoreFuncToExecute && !justReset && ctx->timedFunctionCount > 0)
+    if (noMoreFuncToExecute && !justReset && ctx->timedFunctionCount > 0 && gExitAfterNoMoreTimedFuncs)
     {
         gShouldExit = 1;
     }

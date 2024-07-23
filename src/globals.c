@@ -8,3 +8,4 @@ int gMaxFixtures = 32;
 int gShouldExit = 0;
 int gUPS = 1000;
 int gDoTimerReset = 0;
+int gExitAfterNoMoreTimedFuncs = 0;
