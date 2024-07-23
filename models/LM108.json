@@ -11,6 +11,11 @@
     "motor_speed": 9,
     "brightness": 3
   },
+  "supported": {
+    "tilt": true,
+    "pan": true,
+    "white": true
+  },
   "max_tilt": 270,
   "max_pan": 540
 }

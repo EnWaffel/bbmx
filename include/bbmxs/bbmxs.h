@@ -44,6 +44,9 @@ typedef struct
 {
   char* name;
   BBMXSmodelopts opts;
+  int supports_tilt;
+  int supports_pan;
+  int supports_white;
 } BBMXSmodel;
 
 typedef struct

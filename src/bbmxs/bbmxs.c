@@ -134,6 +134,12 @@ static int load_model(char* fileName, json_object* obj, int idx)
   opts.max_tilt = json_object_get_double(json_object_object_get(obj, "max_tilt"));
   opts.max_pan = json_object_get_double(json_object_object_get(obj, "max_pan"));
 
+  json_object* supported_obj = json_object_object_get(obj, "supported");
+
+  model.supports_tilt = json_object_get_boolean(json_object_object_get(supported_obj, "tilt"));
+  model.supports_pan = json_object_get_boolean(json_object_object_get(supported_obj, "pan"));
+  model.supports_white = json_object_get_boolean(json_object_object_get(supported_obj, "white"));
+
   opts.ch_cfg = ch_cfg;
   model.opts = opts;
 

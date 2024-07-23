@@ -361,30 +361,43 @@ static int l_bbmx_fx_pan(lua_State* L)
   return 0;
 }
 
-static int l_bbmx_fx_toggle(lua_State* L)
+static int l_bbmx_fx_reset(lua_State* L)
 {
   const char* name = luaL_checkstring(L, 1);
-  int toggle = lua_toboolean(L, 2);
 
   BBMXSfixture* fx = bbmxs_get_fx(name);
   if (fx == NULL) luaL_error(L, "Can't find fixture named: %s", name);
 
-  if (toggle)
-  {
-    fx->color.r = 0;
-    fx->color.g = 0;
-    fx->color.b = 0;
-    fx->color.w = 0;
-  }
-  else
-  {
-    fx->color.r = 0;
-    fx->color.g = 0;
-    fx->color.b = 0;
-    fx->color.w = 0;
-  }
+  fx->color.r = 0;
+  fx->color.g = 0;
+  fx->color.b = 0;
+  fx->color.w = 0;
+
+  fx->tilt = 0;
+  fx->pan = 0;
 
   bbmxs_fx_update_color(fx);
+
+  uint8_t buf[8];
+  buf[0] = 1;
+  buf[2] = 0;
+  if (fx->model->supports_tilt)
+  {
+    buf[1] = fx->model->opts.ch_cfg.ch_tilt;
+    if (!bbmxs_send_command(BBMXS_CMD_DMX_WRITE, buf, sizeof(buf)))
+    {
+      luaL_error(L, "Failed to send tilt data");
+    }
+  }
+
+  if (fx->model->supports_pan)
+  {
+    buf[1] = fx->model->opts.ch_cfg.ch_pan;
+    if (!bbmxs_send_command(BBMXS_CMD_DMX_WRITE, buf, sizeof(buf)))
+    {
+      luaL_error(L, "Failed to send pan data");
+    }
+  }
 
   return 0;
 }
@@ -502,6 +515,17 @@ static int l_bbmx_fx_flash(lua_State* L)
   return 0;
 }
 
+static int l_lerp(lua_State* L)
+{
+  double a = luaL_checknumber(L, 1);
+  double b = luaL_checknumber(L, 2);
+  double f = luaL_checknumber(L, 3);
+
+  lua_pushnumber(L, a + f * (b - a));
+
+  return 1;
+}
+
 int bbmx_lapi_load(lua_State* L, BBMXSinitargs* initargs)
 {
   if (__initargs != NULL)
@@ -556,8 +580,8 @@ int bbmx_lapi_load(lua_State* L, BBMXSinitargs* initargs)
   lua_pushcfunction(L, l_bbmx_fx_pan);
   lua_setglobal(L, "bbmx_fx_pan");
 
-  lua_pushcfunction(L, l_bbmx_fx_toggle);
-  lua_setglobal(L, "bbmx_fx_toggle");
+  lua_pushcfunction(L, l_bbmx_fx_reset);
+  lua_setglobal(L, "bbmx_fx_reset");
 
   lua_pushcfunction(L, l_bbmx_timed);
   lua_setglobal(L, "bbmx_timed");
@@ -573,6 +597,9 @@ int bbmx_lapi_load(lua_State* L, BBMXSinitargs* initargs)
 
   lua_pushcfunction(L, l_bbmx_fx_flash);
   lua_setglobal(L, "bbmx_fx_flash");
+  
+  lua_pushcfunction(L, l_lerp);
+  lua_setglobal(L, "lerp");
   
   return 0;
 }
