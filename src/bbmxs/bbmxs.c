@@ -254,10 +254,11 @@ int bbmxs_send_command(BBMXScmd cmd, void* data, size_t size)
     {
       uint8_t* _data = (uint8_t*)data;
       uint8_t buf[64];
-      buf[0] = size + 1;
-      buf[1] = BBMXS_CMD_DMX_WRITE;
-      memcpy(&buf[2], _data, size);
-      serial_write(buf, size + 2);
+      buf[0] = 1;
+      buf[1] = size + 1;
+      buf[2] = BBMXS_CMD_DMX_WRITE;
+      memcpy(&buf[3], _data, size);
+      serial_write(buf, size + 3);
     }
   }
 

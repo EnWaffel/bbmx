@@ -168,7 +168,7 @@ int run_script(const char* path)
         alGenBuffers(1, &al_buffer);
         alGenSources(1, &al_source);
 
-        alSourcef(al_source, AL_GAIN, 0.015f);
+        //alSourcef(al_source, AL_GAIN, 0.015f);
         if (!load_audio(ctx->sndFile))
         {
             bbmxs_close();
