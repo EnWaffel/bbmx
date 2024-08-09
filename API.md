@@ -15,7 +15,7 @@ function BBMX_setup()
 ```
 
 This function is the entry point of a bbmx script.  
-Setup fixtures, group and other stuff here.  
+Setup fixtures, groups and other stuff here.  
 
 ```lua
 function BBMX_start()
