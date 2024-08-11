@@ -2,7 +2,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-static HANDLE __handle;
+static HANDLE __handle = NULL;
 
 int serial_open(const char* port)
 {

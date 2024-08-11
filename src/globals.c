@@ -6,6 +6,6 @@ int gDebugMode = 0;
 int gMaxModels = 8;
 int gMaxFixtures = 32;
 int gShouldExit = 0;
-int gUPS = 1000;
+int gUPS = 60;
 int gDoTimerReset = 0;
 int gExitAfterNoMoreTimedFuncs = 0;

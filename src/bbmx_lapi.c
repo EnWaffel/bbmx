@@ -53,12 +53,14 @@ static int l_bbmx_opt(lua_State* L)
   if (strcmp(option, "universe") == 0)
   {
     int uv = luaL_checkinteger(L, 2);
+    if (uv < 1) luaL_error(L, "Invalid universe: %d", uv);
     __cur_universe = uv;
     if (gDebugMode) printf("[DEBUG]: Option: %s | Value: %d\n", option, uv);
   }
   else if (strcmp(option, "channel-mode") == 0)
   {
     int ch = luaL_checkinteger(L, 2);
+    if (ch < 1) luaL_error(L, "Invalid channel-mode: %d", ch);
     __cur_channel_mode = ch;
     if (gDebugMode) printf("[DEBUG]: Option: %s | Value: %d\n", option, ch);
   }

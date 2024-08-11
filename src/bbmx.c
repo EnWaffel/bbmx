@@ -19,6 +19,13 @@
 #include "bbmx_lapi_interface.h"
 #include <math.h>
 
+typedef struct
+{
+    char* buf;
+    size_t sz;
+    char* filename;
+} PreprocessResult;
+
 static int bbmx_run(const char* path);
 static int run_script(const char* path);
 static void print_lua_error(lua_State* L);
@@ -28,6 +35,7 @@ static int load_audio(const char* path);
 static void terminate_openal();
 static void update_flashes(float delta, BBMXScontext* ctx, float timePos);
 static int update_timed_functions(lua_State* L, BBMXScontext* ctx);
+static PreprocessResult preprocess_script(const char* path);
 
 static ALCdevice* alc_device = NULL;
 static ALCcontext* alc_context = NULL;
@@ -103,7 +111,9 @@ int run_script(const char* path)
     lua_State* L = luaL_newstate();
     luaL_openlibs(L);
 
-    if (luaL_loadfile(L, path) != LUA_OK)
+    PreprocessResult preprocess_result = preprocess_script(path);
+
+    if (luaL_loadbuffer(L, preprocess_result.buf, preprocess_result.sz, preprocess_result.filename) != LUA_OK)
     {
         printf("bbmx Error: Failed to load script: \"%s\"", path);
         lua_close(L);
@@ -150,6 +160,7 @@ int run_script(const char* path)
     {
         bbmxs_close();
         lua_close(L);
+        return -1;
     }
 
     bbmx_lapi_loaded();
@@ -168,7 +179,7 @@ int run_script(const char* path)
         alGenBuffers(1, &al_buffer);
         alGenSources(1, &al_source);
 
-        //alSourcef(al_source, AL_GAIN, 0.015f);
+        alSourcef(al_source, AL_GAIN, 0.05f);
         if (!load_audio(ctx->sndFile))
         {
             bbmxs_close();
@@ -281,10 +292,14 @@ int run_script(const char* path)
         do_pcall(L, 0, 0);
     }
 
+
     terminate_openal();
     bbmxs_close();
     lua_close(L);
 
+    free(preprocess_result.buf);
+    free(preprocess_result.filename);
+    
     return 0;
 }
 
@@ -483,4 +498,33 @@ void bbmxi_do_flash(BBMXStimedflash flash)
     curFlash = f;
     curFlashFx = bbmxs_get_fx(flash.name);
     curFlashTemp = 1;
+}
+
+static PreprocessResult preprocess_script(const char* path)
+{
+    PreprocessResult result;
+
+    char* pfile;
+    pfile = path + strlen(path);
+    for (; pfile > path; pfile--)
+    {
+        if ((*pfile == '\\') || (*pfile == '/'))
+        {
+            pfile++;
+            break;
+        }
+    }
+    result.filename = pfile;
+    
+    char* buf = utils_read_file_to_string(path);
+    char* buf1;
+
+    buf1 = utils_str_replace(buf, "require(\"bbmx\")", "");
+    free(buf);
+    buf = buf1;
+
+    result.buf = buf;
+    result.sz = strlen(buf);
+
+    return result;
 }

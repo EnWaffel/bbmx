@@ -1,8 +1,7 @@
 # bbmx Lua API
 
 > All bbmx API functions are prefixed with 'bbmx'.  
->\> Parameters prefixed with '?' are optional.  
->\> ALL colors and brightness range from 0 to 255!
+>\> All colors and brightness range from 0 to 255!
 
 ## User-defined Functions
 
@@ -54,6 +53,19 @@ function bbmx_using(model: string)
 
 Sets the model to use for the next `bbmx_fixture` call.  
 `model`: Any loaded model name.
+
+```lua
+function bbmx_opt(option: string, value: any)
+```
+
+Sets the option `option` to `value`.  
+`option`: The name of the option.  
+`value`: The value.
+
+Available Options:
+
+- **universe** (integer value: 1-?)
+- **channel-mode** (integer value)
 
 ```lua
 function bbmx_fixture(fx: string, ?startingAddress: integer)
@@ -115,7 +127,7 @@ function bbmx_fx_rgbw(fx: string, red: integer, green: integer, blue: integer, w
 ___
 
 ```lua
-function bbmx_fx_tilt(fx: string, value: integer, speed: number)
+function bbmx_fx_tilt(fx: string, value: number, speed: number)
 ```
 
 Tilts the fixture `fx` to `value` degrees at `speed`.  
@@ -124,7 +136,7 @@ Tilts the fixture `fx` to `value` degrees at `speed`.
 `speed`: The speed of tilting. (0-1)  
 
 ```lua
-function bbmx_fx_pan(fx: string, value: integer, speed: number)
+function bbmx_fx_pan(fx: string, value: number, speed: number)
 ```
 
 Pans the fixture `fx` to `value` degrees at `speed`.  
@@ -137,6 +149,80 @@ function bbmx_exit()
 ```
 
 Exits the script.
+
+```lua
+function bbmx_fx_brgt(fx: string, value: integer)
+```
+
+Sets the brightness of the fixture `fx`.  
+`fx`: The name of the fixture.  
+`value`: The intensity.
+
+```lua
+function bbmx_write(fx: string, channel: integer, value: integer)
+```
+
+Writes `value` to the channel `channel` to fixture `fx`.  
+`fx`: The name of the fixture.  
+`channel`: The channel to write to.  
+`value`: The value to write.
+
+## Timed functions
+
+Timed functions are useful for creating sequences of e.g. movement, etc...  
+
+An example would looke like this:  
+
+```lua
+function t1()
+  bbmx_fx_rgb("fx1", 255, 0, 0) -- Set the light to show red at full intensity
+end
+
+function t2()
+  bbmx_fx_rgb("fx1", 0, 255, 0) -- Set the light to show green at full intensity
+end
+
+function t3()
+  bbmx_fx_rgb("fx1", 0, 0, 255) -- Set the light to show blue at full intensity
+end
+
+function t4()
+  bbmx_reset_timer() -- Reset the timer to loop forever
+end
+
+function BBMX_setup()
+  bbmx_port("your port") -- Set the port for the controller
+
+  bbmx_using("your model") -- Select the model
+
+  bbmx_fixture("fx1") -- Register a fixture named 'fx1'
+
+  bbmx_timed("t1", 0) -- Register a timed function to be called on millisecond 0
+  bbmx_timed("t2", 500) -- Register a timed function to be called on millisecond 500
+  bbmx_timed("t3", 1000) -- Register a timed function to be called on millisecond 1000
+  bbmx_timed("t4", 1500) -- Register a timed function to be called on millisecond 1500
+end
+
+function BBMX_start()
+  bbmx_fx_brgt("fx1", 50) -- Set the brightness to 50
+end
+```
+
+___
+
+```lua
+function bbmx_timed(func: string, time: integer)
+```
+
+Registers a function to be timed.  
+`func`: The name of the function to be registered. (e.g. t1) **IT MUST BE GLOBAL**  
+`time`: The time offset since start of execution for when the function should be called. (in milliseconds)
+
+```lua
+function bbmx_reset_timer()
+```
+
+Sets the time back to 0.
 
 ## Utility functions
 
